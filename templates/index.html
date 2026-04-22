@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoteWise AI - Your Election Guide</title>
+    <meta name="description" content="VoteWise AI: Learn about the election process, check your eligibility, and get answers to your voting questions.">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1d4ed8', // blue-700
+                        secondary: '#1e40af', // blue-800
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-bold text-2xl text-primary tracking-tight">VoteWise AI</span>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                    <a href="#eligibility" class="text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Eligibility</a>
+                    <a href="#process" class="text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Process</a>
+                    <a href="#timeline" class="text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Timeline</a>
+                    <a href="#chat" class="text-gray-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Chatbot</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">Empowering Your Vote</h1>
+                <p class="mt-4 max-w-2xl text-xl mx-auto text-blue-100">
+                    Understand the election process, verify your eligibility, and get instant answers with our AI-powered assistant.
+                </p>
+                <div class="mt-10 flex justify-center gap-4">
+                    <a href="#eligibility" class="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold shadow-md hover:bg-gray-100 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600">Check Eligibility</a>
+                    <a href="#chat" class="bg-blue-800 text-white px-8 py-3 rounded-full font-semibold shadow-md hover:bg-blue-900 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600">Ask the Bot</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Eligibility Checker -->
+        <section id="eligibility" class="py-16 bg-white">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-900">Voting Eligibility Checker</h2>
+                    <p class="mt-4 text-gray-600">Quickly find out if you are eligible to vote in the upcoming elections.</p>
+                </div>
+                <div class="bg-white rounded-xl p-8 shadow-md border border-gray-100">
+                    <form id="eligibility-form" class="space-y-6">
+                        <div>
+                            <label for="age" class="block text-sm font-medium text-gray-700">Your Age</label>
+                            <input type="number" id="age" name="age" min="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-3 border" placeholder="e.g. 25" aria-required="true">
+                        </div>
+                        <div>
+                            <label for="state" class="block text-sm font-medium text-gray-700">Your State</label>
+                            <select id="state" name="state" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-3 border" aria-required="true">
+                                <option value="" disabled selected>Select your state</option>
+                                <option value="state1">State 1</option>
+                                <option value="state2">State 2</option>
+                                <option value="state3">State 3</option>
+                                <option value="state4">State 4</option>
+                                <!-- More states can be added here -->
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                            Check Eligibility
+                        </button>
+                    </form>
+                    <div id="eligibility-result" class="mt-6 hidden rounded-md p-4 text-center font-medium" role="alert" aria-live="polite">
+                        <!-- Result will be injected here via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process Section -->
+        <section id="process" class="py-16 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-gray-900">The Election Process</h2>
+                    <p class="mt-4 text-gray-600 max-w-2xl mx-auto">Understanding how elections work from start to finish ensures your voice is heard securely and accurately.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <!-- Step 1 -->
+                    <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-400 group-hover:bg-blue-600 transition-colors"></div>
+                        <div class="text-4xl mb-4">📝</div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Registration</h3>
+                        <p class="text-sm text-gray-600">Ensure you are registered to vote before the deadline.</p>
+                    </article>
+                    <!-- Step 2 -->
+                    <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-yellow-400 group-hover:bg-yellow-600 transition-colors"></div>
+                        <div class="text-4xl mb-4">📢</div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Campaign</h3>
+                        <p class="text-sm text-gray-600">Candidates present their platforms to the public.</p>
+                    </article>
+                    <!-- Step 3 -->
+                    <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-indigo-400 group-hover:bg-indigo-600 transition-colors"></div>
+                        <div class="text-4xl mb-4">🗳️</div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Voting</h3>
+                        <p class="text-sm text-gray-600">Cast your ballot on election day or via mail-in.</p>
+                    </article>
+                    <!-- Step 4 -->
+                    <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-purple-400 group-hover:bg-purple-600 transition-colors"></div>
+                        <div class="text-4xl mb-4">📊</div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Counting</h3>
+                        <p class="text-sm text-gray-600">Votes are securely tabulated by officials.</p>
+                    </article>
+                    <!-- Step 5 -->
+                    <article class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all transform hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-teal-400 group-hover:bg-teal-600 transition-colors"></div>
+                        <div class="text-4xl mb-4">🏆</div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Results</h3>
+                        <p class="text-sm text-gray-600">Official results are certified and announced.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section id="timeline" class="py-16 bg-white">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-gray-900">Election Timeline Phases</h2>
+                    <p class="mt-4 text-gray-600">Key milestones in a typical election cycle.</p>
+                </div>
+                
+                <div class="relative border-l-4 border-blue-200 ml-4 md:ml-auto md:w-3/4 lg:w-2/3">
+                    <!-- Phase 1 -->
+                    <div class="mb-10 ml-8 relative">
+                        <span class="absolute -left-11 mt-1.5 h-6 w-6 rounded-full bg-blue-600 ring-4 ring-white flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">1</span>
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900">Phase 1: Voter Registration</h3>
+                        <p class="mt-2 text-gray-600">Citizens ensure they are on the electoral roll. Deadlines typically fall 15-30 days before election day.</p>
+                    </div>
+                    
+                    <!-- Phase 2 -->
+                    <div class="mb-10 ml-8 relative">
+                        <span class="absolute -left-11 mt-1.5 h-6 w-6 rounded-full bg-indigo-600 ring-4 ring-white flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">2</span>
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900">Phase 2: Nomination</h3>
+                        <p class="mt-2 text-gray-600">Individuals formally declare their candidacy and file the necessary paperwork to appear on the ballot.</p>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="mb-10 ml-8 relative">
+                        <span class="absolute -left-11 mt-1.5 h-6 w-6 rounded-full bg-yellow-600 ring-4 ring-white flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">3</span>
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900">Phase 3: Campaigning</h3>
+                        <p class="mt-2 text-gray-600">Candidates present their platforms, participate in debates, and engage with voters.</p>
+                    </div>
+
+                    <!-- Phase 4 -->
+                    <div class="mb-10 ml-8 relative">
+                        <span class="absolute -left-11 mt-1.5 h-6 w-6 rounded-full bg-purple-600 ring-4 ring-white flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">4</span>
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900">Phase 4: Election Day</h3>
+                        <p class="mt-2 text-gray-600">Polls open. Voters cast their ballots.</p>
+                    </div>
+
+                    <!-- Phase 5 -->
+                    <div class="ml-8 relative">
+                        <span class="absolute -left-11 mt-1.5 h-6 w-6 rounded-full bg-teal-600 ring-4 ring-white flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">5</span>
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900">Phase 5: Counting</h3>
+                        <p class="mt-2 text-gray-600">Counting begins immediately after polls close and results are certified.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chatbot Section -->
+        <section id="chat" class="py-16 bg-blue-50">
+            <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-bold text-gray-900">Have Questions? Ask VoteWise AI</h2>
+                    <p class="mt-4 text-gray-600">Our rule-based assistant can help answer common questions about voting.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
+                    <!-- Chat History -->
+                    <div id="chat-box" class="h-96 overflow-y-auto p-6 bg-gray-50 border-b border-gray-200 space-y-4" role="log" aria-live="polite" aria-atomic="false">
+                        <!-- Initial Greeting -->
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs">AI</div>
+                            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-4 py-3 text-gray-800 shadow-sm max-w-[85%]">
+                                Hello! I'm VoteWise AI. Ask me about voter registration, election dates, or eligibility.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <form id="chat-form" class="p-4 bg-white flex gap-2">
+                        <label for="chat-input" class="sr-only">Type your message</label>
+                        <input type="text" id="chat-input" autocomplete="off" class="flex-1 rounded-full border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 border" placeholder="Type your message here..." required aria-required="true">
+                        <button type="submit" id="chat-submit" class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-full shadow-md text-sm font-medium text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+            <p class="text-gray-400 font-medium">VoteWise AI &copy; 2026. Empowering citizens through information.</p>
+            <p class="text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                🔒 Securely powered by Firebase for safe data handling
+            </p>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
