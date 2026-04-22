@@ -3,7 +3,7 @@
 > **Empowering citizens through information.** VoteWise AI is a premium, full-stack interactive assistant designed to simplify the election process for voters everywhere.
 
 ## 🌟 Demo
-**Live Project Link:** [Add your deployed URL here] *(e.g., https://votewise-ai.onrender.com)*
+**Live Project Link:** [https://votewise-ai.onrender.com]
 
 ---
 
