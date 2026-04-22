@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (age >= 18) {
                 eligibilityResult.classList.add('bg-green-100', 'text-green-800', 'border-green-200');
-                eligibilityResult.innerHTML = `Great news! You are eligible to vote in ${state ? state : 'your state'}.<br>Next step: <a href="#process" class="underline font-semibold">Follow the registration process</a>.`;
+                eligibilityResult.innerHTML = `✅ You are eligible to vote in <strong>${state ? state : 'your state'}</strong>.<br><span class="text-sm mt-2 block">Next step: <a href="#process" class="underline font-semibold">Follow the registration process</a>.</span>`;
             } else {
                 eligibilityResult.classList.add('bg-red-100', 'text-red-800', 'border-red-200');
                 eligibilityResult.textContent = `Sorry, you are not currently eligible to vote. You must be at least 18 years old.`;
@@ -110,53 +110,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (chatForm) {
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function submitChatMessage(messageText) {
+        if (!messageText) return;
+
+        // Disable input while processing
+        chatInput.disabled = true;
+        chatSubmitBtn.disabled = true;
+        
+        // Add user message to UI
+        addMessage(messageText, true);
+        chatInput.value = '';
+
+        // Show typing indicator
+        addTypingIndicator();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: messageText })
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
             
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            // Disable input while processing
-            chatInput.disabled = true;
-            chatSubmitBtn.disabled = true;
-            
-            // Add user message to UI
-            addMessage(message, true);
-            chatInput.value = '';
-
-            // Show typing indicator
-            addTypingIndicator();
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const data = await response.json();
-                
-                // Remove typing indicator before adding actual message
+            // Add realistic AI delay (500ms to 1000ms)
+            const delay = Math.floor(Math.random() * 500) + 500;
+            setTimeout(() => {
                 removeTypingIndicator();
                 addMessage(data.response);
-            } catch (error) {
-                console.error('Chat error:', error);
-                removeTypingIndicator();
-                addMessage("I'm sorry, I'm having trouble connecting to my servers right now. Please try again later.");
-            } finally {
-                // Re-enable input
+                
                 chatInput.disabled = false;
-                // Chat input is now empty, so keep submit disabled
                 chatSubmitBtn.disabled = true; 
                 chatInput.focus();
-            }
+            }, delay);
+            
+        } catch (error) {
+            console.error('Chat error:', error);
+            removeTypingIndicator();
+            addMessage("I'm sorry, I'm having trouble connecting to my servers right now. Please try again later.");
+            chatInput.disabled = false;
+            chatSubmitBtn.disabled = true; 
+            chatInput.focus();
+        }
+    }
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = chatInput.value.trim();
+            submitChatMessage(message);
         });
     }
 
@@ -166,10 +174,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = e.target.textContent;
             if (chatInput) {
                 chatInput.value = text;
-                chatSubmitBtn.disabled = false;
-                // Auto-submit the form
-                chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                submitChatMessage(text);
             }
+        }
+        
+        // Auto-focus input when clicking any link pointing to #chat
+        if (e.target.closest('a[href="#chat"]')) {
+            // Give smooth scroll time to finish before focusing
+            setTimeout(() => {
+                if (chatInput) {
+                    chatInput.focus();
+                }
+            }, 800);
         }
     });
 

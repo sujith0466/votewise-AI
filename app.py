@@ -94,11 +94,11 @@ def get_bot_response(user_message):
         )
     elif "documents" in message or "id" in message or "proof" in message:
         return (
-            "When voting or registering, you generally need valid identification:\n"
-            "1. Photo ID: A driver's license, passport, or state/national ID card.\n"
-            "2. Proof of Address: A recent utility bill or bank statement.\n"
-            "3. Voter ID Card: Issued by your local election commission (if applicable).\n"
-            "Always verify exact requirements on your local election website!"
+            "To register for voting, you may need:\n"
+            "• Aadhaar Card\n"
+            "• Address Proof (Electricity bill / Rental agreement)\n"
+            "• Passport size photo\n"
+            "• Identity proof"
         )
     elif "where to vote" in message or "polling booth" in message or "location" in message:
         return (
