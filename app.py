@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # Initialize Firebase
 firebase_initialized = False
@@ -33,42 +35,60 @@ except Exception as e:
 def get_bot_response(user_message):
     message = user_message.lower()
     
-    if "first time voter" in message:
+    # Age/Eligibility detection
+    if ("i am" in message or "i'm" in message or "age is" in message) and any(char.isdigit() for char in message):
+        import re
+        numbers = re.findall(r'\d+', message)
+        if numbers:
+            age = int(numbers[0])
+            state_match = re.search(r'from ([a-zA-Z\s]+)', message)
+            state = state_match.group(1).strip() if state_match else "your state"
+            
+            if age >= 18:
+                return (
+                    f"Great news! Since you are {age}, you are fully eligible to vote in {state.title()}.\n\n"
+                    "Next Steps:\n"
+                    "1. Check if you are on the electoral roll.\n"
+                    "2. Register to vote if you haven't already.\n"
+                    "3. Find your polling booth."
+                )
+            else:
+                return f"Since you are {age}, you must wait until you are 18 to be eligible to vote. However, it's great that you are learning about the process early!"
+
+    if "first time" in message or "new" in message or "beginner" in message:
         return (
-            "Welcome, first-time voter! Here is how to get started:\n"
-            "1. Check if you are eligible (e.g., 18+ years old and a citizen).\n"
-            "2. Register to vote online or at your local election office.\n"
-            "3. Find your designated polling booth before Election Day.\n"
-            "4. Bring a valid photo ID when you go to vote.\n"
-            "5. Don't hesitate to ask polling officers for help on the day!"
+            "Welcome to the democratic process! Here is a step-by-step guide for beginners:\n"
+            "1. Check eligibility: Ensure you are 18+ and a citizen.\n"
+            "2. Register: Apply for your Voter ID card online or offline.\n"
+            "3. Get voter ID: Keep your Voter ID (EPIC) ready.\n"
+            "4. Visit polling booth: Find your assigned station before Election Day.\n"
+            "5. Cast vote using EVM: Follow instructions at the booth to cast your vote securely."
         )
     elif "how to vote" in message:
         return (
-            "Here is how to vote:\n"
-            "1. Register as a voter.\n"
-            "2. Verify your name in the voter list.\n"
-            "3. Visit the polling booth on election day.\n"
-            "4. Cast your vote using the EVM or mail-in ballot.\n"
-            "5. Confirm your vote was recorded."
+            "Here is how you cast your vote:\n"
+            "1. Enter the polling station and show your ID to the polling officer.\n"
+            "2. Proceed to the voting compartment.\n"
+            "3. Press the blue button on the Electronic Voting Machine (EVM) next to your chosen candidate.\n"
+            "4. Wait for the beep sound to confirm your vote was recorded."
         )
     elif "register" in message:
         return (
-            "Steps to register to vote:\n"
-            "• Visit your local election office or official voter portal online.\n"
-            "• Fill out the voter registration form.\n"
-            "• Submit valid proof of identity and address.\n"
-            "• Check your application status online to ensure you are on the list."
+            "To register to vote:\n"
+            "1. Visit the official Election Commission Voter Portal.\n"
+            "2. Fill out the new voter registration form (usually Form 6).\n"
+            "3. Upload a passport-size photo, age proof, and address proof.\n"
+            "4. Submit the form and track your application status online."
         )
     elif "evm" in message:
         return (
-            "EVM stands for Electronic Voting Machine.\n"
+            "An Electronic Voting Machine (EVM) is used to record votes securely.\n"
             "• It consists of a Control Unit and a Balloting Unit.\n"
-            "• You simply press the button next to your chosen candidate's symbol.\n"
-            "• It is fast, secure, and speeds up the counting process significantly."
+            "• It prevents tampering and ensures quick counting of votes."
         )
     elif "nota" in message:
         return (
-            "NOTA means 'None of the Above'.\n"
+            "NOTA stands for 'None of the Above'.\n"
             "• It is an option on the EVM for voters who do not wish to vote for any of the listed candidates.\n"
             "• It allows you to exercise your democratic right to vote without compromising your personal choice."
         )
@@ -82,11 +102,10 @@ def get_bot_response(user_message):
         )
     elif "where to vote" in message or "polling booth" in message or "location" in message:
         return (
-            "To find your polling booth or voting location:\n"
-            "1. Visit your state or national election commission website.\n"
-            "2. Look for the 'Find My Polling Station' or 'Voter Search' tool.\n"
-            "3. Enter your Voter ID number or personal details to find the exact address.\n"
-            "4. Make sure to double-check the location a few days before Election Day!"
+            "To find your polling booth:\n"
+            "• Visit the official Election Commission website.\n"
+            "• Enter your voter ID (EPIC number) or personal details.\n"
+            "• Locate your nearest assigned polling station on the map."
         )
     elif "election process" in message:
         return (
@@ -99,13 +118,11 @@ def get_bot_response(user_message):
         )
     else:
         return (
-            "I can help with:\n"
+            "Try asking:\n"
             "• How to vote\n"
-            "• Voter registration\n"
             "• Documents required\n"
-            "• Where to vote\n"
-            "• EVM & NOTA\n\n"
-            "Try asking one of these!"
+            "• First-time voter guide\n"
+            "• Where to vote"
         )
 
 @app.route("/")

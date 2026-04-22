@@ -160,6 +160,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Quick Reply Buttons Logic
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('quick-reply-btn')) {
+            const text = e.target.textContent;
+            if (chatInput) {
+                chatInput.value = text;
+                chatSubmitBtn.disabled = false;
+                // Auto-submit the form
+                chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }
+    });
+
     // 3. Highlight active navbar section on scroll
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('nav a');
@@ -183,4 +196,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // FORCE HARD FIX (GUARANTEED) to overcome aggressive browser HTML caching
+    const dropdown = document.getElementById("state");
+    if (dropdown) {
+        dropdown.innerHTML = `
+            <option value="" disabled selected>Select your state</option>
+            <option value="Andhra Pradesh">Andhra Pradesh</option>
+            <option value="Telangana">Telangana</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Delhi</option>
+            <option value="Odisha">Odisha</option>
+            <option value="West Bengal">West Bengal</option>
+        `;
+    }
 });
