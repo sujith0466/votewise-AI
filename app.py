@@ -28,39 +28,32 @@ db = None
 gemini_initialized = False
 gemini_model = None
 
-# 2. Lazy Initialization for Gunicorn/Production
-@app.before_request
-def initialize_services():
+# Safe, idempotent service initialization (called inside routes, NOT at import time)
+def init_services():
+    """Initialize Firebase and Gemini lazily. Safe to call multiple times."""
     global firebase_initialized, db, gemini_initialized, gemini_model
-    
+
     # Initialize Firebase safely
-    if not firebase_initialized:
+    if firebase_initialized is False:
         try:
             firebase_key = os.environ.get("FIREBASE_KEY")
             if firebase_key:
                 firebase_dict = json.loads(firebase_key)
                 cred = credentials.Certificate(firebase_dict)
-                firebase_admin.initialize_app(cred)
+                if not firebase_admin._apps:
+                    firebase_admin.initialize_app(cred)
                 db = firestore.client()
                 firebase_initialized = True
                 print("Firebase initialized successfully")
             else:
-                # Local fallback if available
-                if os.path.exists("serviceAccountKey.json"):
-                    cred = credentials.Certificate("serviceAccountKey.json")
-                    firebase_admin.initialize_app(cred)
-                    db = firestore.client()
-                    firebase_initialized = True
-                    print("Firebase initialized using serviceAccountKey.json")
-                else:
-                    print("FIREBASE_KEY not found. Running in offline mode.")
-                    firebase_initialized = "OFFLINE"
+                print("FIREBASE_KEY not found. Running without Firebase.")
+                firebase_initialized = "OFFLINE"
         except Exception as e:
             print(f"Firebase init error: {e}")
             firebase_initialized = "FAILED"
 
     # Initialize Gemini safely
-    if not gemini_initialized:
+    if gemini_initialized is False:
         try:
             gemini_api_key = os.environ.get("GEMINI_API_KEY")
             if gemini_api_key:
@@ -273,6 +266,9 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    # 0. Ensure services are ready
+    init_services()
+
     # 1. Rate Limiting
     client_ip = request.remote_addr
     if not check_rate_limit(client_ip):
@@ -321,7 +317,7 @@ def chat():
         }), 500
         
     # 5. Firebase Logging
-    if firebase_initialized and db:
+    if firebase_initialized is True and db:
         try:
             doc_ref = db.collection("chat_queries").document()
             doc_ref.set({
