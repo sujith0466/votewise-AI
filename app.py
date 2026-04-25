@@ -32,20 +32,16 @@ try:
         try:
             firebase_dict = json.loads(firebase_key)
             cred = credentials.Certificate(firebase_dict)
+            firebase_admin.initialize_app(cred)
+            db = firestore.client()
+            firebase_initialized = True
+            print("Firebase initialized")
         except json.JSONDecodeError:
-            print("Invalid FIREBASE_KEY format. Using serviceAccountKey.json.")
-            cred = credentials.Certificate("serviceAccountKey.json")
+            print("Invalid FIREBASE_KEY format. Must be a valid JSON string.")
     else:
-        cred = credentials.Certificate("serviceAccountKey.json")
-    
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    firebase_initialized = True
-    print("Firebase initialized")
+        print("FIREBASE_KEY not found in environment. Running without Firebase.")
 except Exception as e:
     print(f"Failed to initialize Firebase: {e}")
-    with open("error.log", "a") as f:
-        f.write(f"Firebase initialization error: {e}\n")
 
 # Initialize Gemini
 gemini_initialized = False
@@ -60,8 +56,6 @@ try:
         print("GEMINI_API_KEY not found in environment.")
 except Exception as e:
     print(f"Failed to initialize Gemini: {e}")
-    with open("error.log", "a") as f:
-        f.write(f"Gemini initialization error: {e}\n")
 
 
 def get_rule_based_response(user_message):
@@ -194,8 +188,6 @@ def get_gemini_response(user_input):
         return text
     except Exception as e:
         print(f"Gemini generation error: {e}")
-        with open("error.log", "a") as f:
-            f.write(f"Gemini generation error: {e}\n")
         return "I'm having trouble thinking right now. Please try asking about 'how to vote' or 'documents required'."
 
 
@@ -237,8 +229,6 @@ def translate_response(text, target_language):
         return translated_text
     except Exception as e:
         print(f"Gemini translation error: {e}")
-        with open("error.log", "a") as f:
-            f.write(f"Gemini translation error: {e}\n")
         return text # fallback to english gracefully
 
 
@@ -306,8 +296,7 @@ def chat():
             final_response = translate_response(bot_response, language)
             
     except Exception as e:
-        with open("error.log", "a") as f:
-            f.write(f"Routing error: {e}\n")
+        print(f"Routing error: {e}")
         return jsonify({
             "response": "An internal system error occurred. Please try again.",
             "status": "error"
@@ -326,8 +315,6 @@ def chat():
             })
         except Exception as e:
             print(f"Failed to write to Firebase: {e}")
-            with open("error.log", "a") as f:
-                f.write(f"Firebase write error: {e}\n")
                 
     # 6. Return Structured Output
     return jsonify({
