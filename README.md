@@ -56,5 +56,26 @@ PORT=5000
    python app.py
    ```
    *Visit `http://127.0.0.1:5000` to interact.*
+---
+
+## 🧪 Testing
+Includes lightweight unit tests (`test_app.py`) covering:
+- Rule-based response accuracy (EVM, NOTA, how to vote)
+- Input validation (empty, oversized, malformed requests)
+- API contract verification (JSON structure, status codes)
+
+Run tests:
+```bash
+python test_app.py
+```
 
 ---
+
+## 🛡️ AI Safety
+- Gemini responses are governed by a **neutral system prompt** that enforces factual, unbiased output.
+- The AI **will not** recommend any political party or candidate.
+- Out-of-scope queries are redirected to official Election Commission sources.
+- Ensures **responsible AI behavior** aligned with Google's AI Principles.
+
+---
+*Developed for the Google Antigravity AI Hackathon.*
