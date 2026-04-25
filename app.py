@@ -21,41 +21,59 @@ CACHE_EXPIRY = 3600 # 1 hour
 IP_REQUESTS = {}
 RATE_LIMIT_WINDOW = 60 # 1 minute
 MAX_REQUESTS_PER_MINUTE = 30
-
-# Initialize Firebase
+ 
+# Global State
 firebase_initialized = False
 db = None
-
-try:
-    firebase_key = os.environ.get("FIREBASE_KEY")
-    if firebase_key:
-        try:
-            firebase_dict = json.loads(firebase_key)
-            cred = credentials.Certificate(firebase_dict)
-            firebase_admin.initialize_app(cred)
-            db = firestore.client()
-            firebase_initialized = True
-            print("Firebase initialized")
-        except json.JSONDecodeError:
-            print("Invalid FIREBASE_KEY format. Must be a valid JSON string.")
-    else:
-        print("FIREBASE_KEY not found in environment. Running without Firebase.")
-except Exception as e:
-    print(f"Failed to initialize Firebase: {e}")
-
-# Initialize Gemini
 gemini_initialized = False
-try:
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    if gemini_api_key:
-        genai.configure(api_key=gemini_api_key)
-        gemini_model = genai.GenerativeModel("gemini-2.5-flash")
-        gemini_initialized = True
-        print("Gemini initialized")
-    else:
-        print("GEMINI_API_KEY not found in environment.")
-except Exception as e:
-    print(f"Failed to initialize Gemini: {e}")
+gemini_model = None
+
+# 2. Lazy Initialization for Gunicorn/Production
+@app.before_request
+def initialize_services():
+    global firebase_initialized, db, gemini_initialized, gemini_model
+    
+    # Initialize Firebase safely
+    if not firebase_initialized:
+        try:
+            firebase_key = os.environ.get("FIREBASE_KEY")
+            if firebase_key:
+                firebase_dict = json.loads(firebase_key)
+                cred = credentials.Certificate(firebase_dict)
+                firebase_admin.initialize_app(cred)
+                db = firestore.client()
+                firebase_initialized = True
+                print("Firebase initialized successfully")
+            else:
+                # Local fallback if available
+                if os.path.exists("serviceAccountKey.json"):
+                    cred = credentials.Certificate("serviceAccountKey.json")
+                    firebase_admin.initialize_app(cred)
+                    db = firestore.client()
+                    firebase_initialized = True
+                    print("Firebase initialized using serviceAccountKey.json")
+                else:
+                    print("FIREBASE_KEY not found. Running in offline mode.")
+                    firebase_initialized = "OFFLINE"
+        except Exception as e:
+            print(f"Firebase init error: {e}")
+            firebase_initialized = "FAILED"
+
+    # Initialize Gemini safely
+    if not gemini_initialized:
+        try:
+            gemini_api_key = os.environ.get("GEMINI_API_KEY")
+            if gemini_api_key:
+                genai.configure(api_key=gemini_api_key)
+                gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+                gemini_initialized = True
+                print("Gemini initialized successfully")
+            else:
+                print("GEMINI_API_KEY missing. AI features disabled.")
+                gemini_initialized = "OFFLINE"
+        except Exception as e:
+            print(f"Gemini init error: {e}")
+            gemini_initialized = "FAILED"
 
 
 def get_rule_based_response(user_message):
