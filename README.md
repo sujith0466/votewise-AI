@@ -1,73 +1,60 @@
 # VoteWise AI 🗳️
 
-> **Empowering citizens through information.** VoteWise AI is a premium, full-stack interactive assistant designed to simplify the election process for voters everywhere.
+> **Empowering citizens through information.** VoteWise AI is a production-hardened, interactive election guide featuring a high-performance hybrid AI engine.
 
-## 🌟 Demo
-**Live Project Link: https://votewise-ai.onrender.com
-
----
-
-## 📖 Project Overview
-VoteWise AI tackles the critical issue of voter education. Many citizens—especially first-time voters—are unaware of the step-by-step election process, eligibility criteria, and important election jargon (like EVM and NOTA). VoteWise AI bridges this gap with a polished, accessible, and simple-to-use platform featuring an intelligent chatbot.
+## 🚀 Live Demo
+**Project Link:** [https://votewise-ai.onrender.com](https://votewise-ai.onrender.com)
 
 ---
 
-## 🏗️ System Design
-The application is designed to be highly secure, lightning-fast, and deeply modular:
-- **Frontend (View):** HTML5, Vanilla JavaScript, and Tailwind CSS (via CDN for zero-build overhead). 
-- **Backend (Controller):** Python & Flask for rapid, lightweight API routing and AI logic processing.
-- **Database (Model):** Firebase Firestore (NoSQL) for securely and asynchronously logging user queries and interactions.
-
-*(The entire application is engineered to stay under 1MB, ensuring maximum performance even on low-bandwidth networks.)*
-
----
-
-## 🤖 Prompt Engineering Strategy
-VoteWise AI utilizes a carefully crafted rule-based prompt logic system optimized for clarity, engagement, and safety:
-- **Role-based Logic:** The bot consistently assumes the role of an objective, helpful election guide.
-- **Context-Aware Behavior:** It recognizes specific intents (like "first-time voter" or "documents required") and provides tailored, encouraging advice.
-- **Structured Responses:** Every response is formatted into bite-sized, bulleted, or numbered step-by-step structures, maximizing readability.
-- **Smart Fallback:** When an intent is not recognized, the bot gracefully guides the user back on track by explicitly suggesting specific clickable-style queries.
+## ✨ Key Features
+- **Hybrid Chatbot:** Intelligent routing between a lightning-fast **Rule-based engine** and **Gemini 2.5 Flash** for complex reasoning.
+- **Multi-language Support:** Get answers in **English**, **Hindi (हिंदी)**, or **Telugu (తెలుగు)**.
+- **Smart Fallback:** Graceful handling of API failures and out-of-scope queries with guided suggestions.
+- **Efficiency First:** Integrated **In-memory Response Caching** to eliminate redundant API calls and reduce costs.
+- **Security & Resilience:** Built-in **IP-based Rate Limiting** and strict input validation.
 
 ---
 
-## ✨ Why This Stands Out
-- **Lightweight & Blazing Fast:** Zero heavy API dependencies, meaning instantaneous response times and an overall project size of `<1MB`.
-- **Premium UX/UI:** Features micro-interactions like message fade-ins, "Typing..." indicators, auto-scrolling chat, scrollspy navigation, and soft shadows.
-- **Accessibility First:** Fully navigable via keyboard, strict semantic HTML, visible focus rings, and high contrast text ensures everyone can participate.
-- **Built using Google Antigravity:** Engineered with an AI-first collaborative approach, prioritizing clean code and rapid iteration.
+## 🏗️ Architecture & Tech Stack
+The system follows a streamlined modular flow:
+**User Input → API Validation → Rule Engine (Fast) OR Gemini AI (Complex) → Translation Layer → Firestore Logging**
+
+- **Frontend:** Vanilla HTML5/JS + Tailwind CSS (Accessible & Responsive).
+- **Backend:** Python / Flask (Clean, modular logic).
+- **AI Services:** 
+  - **Gemini API:** Powers advanced reasoning and real-time translation.
+  - **Firebase Firestore:** Securely logs interactions (`query`, `response`, `source`, `timestamp`).
 
 ---
 
-## 🌍 Real-World Impact
-- **Helps First-Time Voters:** Breaks down an intimidating democratic process into an easy-to-follow, 5-step journey.
-- **Improves Civic Awareness:** Defines crucial election jargon, empowering citizens to make informed decisions.
-- **Reduces Confusion:** Consolidates everything—from checking eligibility based on age to understanding the timeline—into one single, cohesive interface.
+## ⚡ Performance Highlights
+- **Ultra-Low Latency:** Rule-based responses resolve in **<200ms**.
+- **Cost Efficient:** Caching ensures repeat queries cost zero tokens.
+- **Robust:** Gemini is triggered only when rules aren't met, ensuring high uptime even during quota limits.
 
 ---
 
-## 🚀 Setup Instructions
-1. **Clone the repository**:
+## 🛠️ Deployment & Setup
+
+### Environment Variables
+Required secrets for full functionality:
+```env
+GEMINI_API_KEY=your_google_ai_key
+FIREBASE_KEY=your_firebase_json_string
+PORT=5000
+```
+
+### Local Setup
+1. Clone & Install:
    ```bash
    git clone https://github.com/your-username/votewise-ai.git
-   cd votewise-ai
-   ```
-2. **Install dependencies**:
-   ```bash
    pip install -r requirements.txt
    ```
-3. **Run the Application**:
+2. Run:
    ```bash
    python app.py
    ```
-4. **Access the Web App**: Open your browser and go to `http://127.0.0.1:5000`.
+   *Visit `http://127.0.0.1:5000` to interact.*
 
-### 🔒 Firebase Integration (Optional but recommended)
-To enable secure chat logging:
-1. Create a Firebase project and a Firestore Database.
-2. Generate a Service Account private key (`serviceAccountKey.json`) and place it in the root directory.
-3. Ensure the `.env` file points to it:
-   ```env
-   FIREBASE_CREDENTIALS_PATH=serviceAccountKey.json
-   ```
-*(Note: The app will run gracefully even without Firebase credentials, automatically disabling database writes).*
+---

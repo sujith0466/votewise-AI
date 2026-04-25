@@ -1,16 +1,26 @@
 import os
 import json
 import datetime
+import re
+import time
 from flask import Flask, render_template, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+# Security: In-memory cache & Rate limiting state
+response_cache = {}
+CACHE_EXPIRY = 3600 # 1 hour
+IP_REQUESTS = {}
+RATE_LIMIT_WINDOW = 60 # 1 minute
+MAX_REQUESTS_PER_MINUTE = 30
 
 # Initialize Firebase
 firebase_initialized = False
@@ -19,8 +29,12 @@ db = None
 try:
     firebase_key = os.environ.get("FIREBASE_KEY")
     if firebase_key:
-        firebase_dict = json.loads(firebase_key)
-        cred = credentials.Certificate(firebase_dict)
+        try:
+            firebase_dict = json.loads(firebase_key)
+            cred = credentials.Certificate(firebase_dict)
+        except json.JSONDecodeError:
+            print("Invalid FIREBASE_KEY format. Using serviceAccountKey.json.")
+            cred = credentials.Certificate("serviceAccountKey.json")
     else:
         cred = credentials.Certificate("serviceAccountKey.json")
     
@@ -30,17 +44,41 @@ try:
     print("Firebase initialized")
 except Exception as e:
     print(f"Failed to initialize Firebase: {e}")
+    with open("error.log", "a") as f:
+        f.write(f"Firebase initialization error: {e}\n")
 
-# Rule-based chatbot logic
-def get_bot_response(user_message):
+# Initialize Gemini
+gemini_initialized = False
+try:
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+        gemini_initialized = True
+        print("Gemini initialized")
+    else:
+        print("GEMINI_API_KEY not found in environment.")
+except Exception as e:
+    print(f"Failed to initialize Gemini: {e}")
+    with open("error.log", "a") as f:
+        f.write(f"Gemini initialization error: {e}\n")
+
+
+def get_rule_based_response(user_message):
+    """
+    Handles standard voting queries using hardcoded rules for maximum efficiency.
+    Returns the response string or None if no rule matches.
+    """
     message = user_message.lower()
     
-    # Age/Eligibility detection
-    if ("i am" in message or "i'm" in message or "age is" in message) and any(char.isdigit() for char in message):
-        import re
-        numbers = re.findall(r'\d+', message)
-        if numbers:
-            age = int(numbers[0])
+    # Age/Eligibility detection using strict regex
+    age_match = re.search(r"(?:i am|i'm|my age is|age is)\s*(\d+)|(\d+)\s*years old", message)
+    is_explain_prompt = "explain" in message and "like i am" in message
+    
+    if age_match and not is_explain_prompt:
+        age_str = age_match.group(1) or age_match.group(2)
+        if age_str:
+            age = int(age_str)
             state_match = re.search(r'from ([a-zA-Z\s]+)', message)
             state = state_match.group(1).strip() if state_match else "your state"
             
@@ -55,6 +93,7 @@ def get_bot_response(user_message):
             else:
                 return f"Since you are {age}, you must wait until you are 18 to be eligible to vote. However, it's great that you are learning about the process early!"
 
+    # Keyword mapping
     if "first time" in message or "new" in message or "beginner" in message:
         return (
             "Welcome to the democratic process! Here is a step-by-step guide for beginners:\n"
@@ -116,7 +155,16 @@ def get_bot_response(user_message):
             "4. Voting on Election Day: Citizens cast their ballots.\n"
             "5. Counting of Votes and Results: Officials tally votes and declare winners."
         )
-    else:
+    
+    return None # Return None if no rule matched
+
+
+def get_gemini_response(user_input):
+    """
+    Handles complex queries by passing them to Gemini.
+    Uses caching to avoid redundant API calls.
+    """
+    if not gemini_initialized:
         return (
             "Try asking:\n"
             "• How to vote\n"
@@ -124,6 +172,92 @@ def get_bot_response(user_message):
             "• First-time voter guide\n"
             "• Where to vote"
         )
+    
+    # Check cache first
+    cache_key = f"gen_{user_input.lower().strip()}"
+    if cache_key in response_cache:
+        cached_data = response_cache[cache_key]
+        if time.time() - cached_data['time'] < CACHE_EXPIRY:
+            return cached_data['text']
+            
+    prompt = (
+        "You are VoteWise AI, an assistant that explains election processes in simple, "
+        "structured steps for Indian users. Keep answers clear, concise, and beginner-friendly. "
+        "Use bullet points or numbered lists where appropriate. User query: " + user_input
+    )
+    
+    try:
+        response = gemini_model.generate_content(prompt)
+        text = response.text.strip()
+        # Save to cache
+        response_cache[cache_key] = {'text': text, 'time': time.time()}
+        return text
+    except Exception as e:
+        print(f"Gemini generation error: {e}")
+        with open("error.log", "a") as f:
+            f.write(f"Gemini generation error: {e}\n")
+        return "I'm having trouble thinking right now. Please try asking about 'how to vote' or 'documents required'."
+
+
+def translate_response(text, target_language):
+    """
+    Translates the final bot response into the target language using Gemini.
+    Bypasses translation if target is English or Gemini is offline.
+    """
+    if not gemini_initialized or target_language == 'en':
+        return text
+        
+    lang_map = {
+        "hi": "Hindi",
+        "te": "Telugu"
+    }
+    target_lang_name = lang_map.get(target_language, "English")
+    
+    if target_lang_name == "English":
+        return text
+        
+    # Check cache
+    cache_key = f"trans_{target_language}_{text[:50]}"
+    if cache_key in response_cache:
+        cached_data = response_cache[cache_key]
+        if time.time() - cached_data['time'] < CACHE_EXPIRY:
+            return cached_data['text']
+            
+    prompt = (
+        f"Translate the following text to {target_lang_name}. "
+        "Maintain the exact same formatting, bullet points, and structure. "
+        "Only output the translated text, nothing else.\n\n"
+        f"Text to translate:\n{text}"
+    )
+    
+    try:
+        response = gemini_model.generate_content(prompt)
+        translated_text = response.text.strip()
+        response_cache[cache_key] = {'text': translated_text, 'time': time.time()}
+        return translated_text
+    except Exception as e:
+        print(f"Gemini translation error: {e}")
+        with open("error.log", "a") as f:
+            f.write(f"Gemini translation error: {e}\n")
+        return text # fallback to english gracefully
+
+
+def check_rate_limit(ip):
+    """Lightweight rate limiting to prevent API abuse."""
+    current_time = time.time()
+    
+    # Clean up old records
+    if ip in IP_REQUESTS:
+        IP_REQUESTS[ip] = [t for t in IP_REQUESTS[ip] if current_time - t < RATE_LIMIT_WINDOW]
+    else:
+        IP_REQUESTS[ip] = []
+        
+    if len(IP_REQUESTS[ip]) >= MAX_REQUESTS_PER_MINUTE:
+        return False
+        
+    IP_REQUESTS[ip].append(current_time)
+    return True
+
 
 @app.route("/")
 def index():
@@ -131,28 +265,75 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    data = request.json
-    user_message = data.get("message", "")
-    
-    if not user_message:
-        return jsonify({"error": "Message is required"}), 400
+    # 1. Rate Limiting
+    client_ip = request.remote_addr
+    if not check_rate_limit(client_ip):
+        return jsonify({
+            "response": "You are sending too many messages. Please wait a moment.",
+            "status": "error"
+        }), 429
         
-    bot_response = get_bot_response(user_message)
-    
-    # Store in Firebase if initialized
+    # 2. Input Validation & Sanitization
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"response": "Invalid request format.", "status": "error"}), 400
+            
+        user_message = str(data.get("message", "")).strip()
+        language = str(data.get("language", "en")).strip()
+        
+        if not user_message:
+            return jsonify({"response": "Message cannot be empty.", "status": "error"}), 400
+            
+        if len(user_message) > 500:
+            return jsonify({"response": "Message is too long. Please keep it under 500 characters.", "status": "error"}), 400
+            
+    except Exception as e:
+        return jsonify({"response": "An unexpected error occurred processing your input.", "status": "error"}), 400
+        
+    # 3. Smart Hybrid Routing
+    source = "rule-based"
+    try:
+        bot_response = get_rule_based_response(user_message)
+        
+        if not bot_response:
+            source = "gemini"
+            bot_response = get_gemini_response(user_message)
+            
+        # 4. Translation Layer (Skip if base failed or if English)
+        final_response = bot_response
+        if language != "en" and "trouble thinking right now" not in bot_response:
+            final_response = translate_response(bot_response, language)
+            
+    except Exception as e:
+        with open("error.log", "a") as f:
+            f.write(f"Routing error: {e}\n")
+        return jsonify({
+            "response": "An internal system error occurred. Please try again.",
+            "status": "error"
+        }), 500
+        
+    # 5. Firebase Logging
     if firebase_initialized and db:
         try:
             doc_ref = db.collection("chat_queries").document()
             doc_ref.set({
                 "user_query": user_message,
-                "bot_response": bot_response,
+                "bot_response": final_response,
+                "language": language,
+                "source": source,
                 "timestamp": firestore.SERVER_TIMESTAMP
             })
-            print("Data stored successfully")
         except Exception as e:
             print(f"Failed to write to Firebase: {e}")
-            
-    return jsonify({"response": bot_response})
+            with open("error.log", "a") as f:
+                f.write(f"Firebase write error: {e}\n")
+                
+    # 6. Return Structured Output
+    return jsonify({
+        "response": final_response,
+        "status": "success"
+    }), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

@@ -93,8 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.textContent = 'AI';
 
         const bubble = document.createElement('div');
-        bubble.className = `px-4 py-3 shadow-sm text-gray-500 italic bg-white border border-gray-200 rounded-2xl rounded-tl-none`;
-        bubble.textContent = 'Typing...';
+        bubble.className = `px-4 py-3 shadow-sm text-gray-500 italic bg-white border border-gray-200 rounded-2xl rounded-tl-none animate-pulse flex items-center gap-1`;
+        bubble.innerHTML = '<span class="w-2 h-2 bg-gray-400 rounded-full"></span><span class="w-2 h-2 bg-gray-400 rounded-full animation-delay-200"></span><span class="w-2 h-2 bg-gray-400 rounded-full animation-delay-400"></span>';
 
         msgDiv.appendChild(avatar);
         msgDiv.appendChild(bubble);
@@ -124,16 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show typing indicator
         addTypingIndicator();
 
+        // Get language selection
+        const languageSelector = document.getElementById('language');
+        const selectedLanguage = languageSelector ? languageSelector.value : 'en';
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: messageText })
+                body: JSON.stringify({ message: messageText, language: selectedLanguage })
             });
 
-            if (!response.ok) {
+            if (!response.ok && response.status !== 400 && response.status !== 429) {
                 throw new Error('Network response was not ok');
             }
 
@@ -143,7 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const delay = Math.floor(Math.random() * 500) + 500;
             setTimeout(() => {
                 removeTypingIndicator();
-                addMessage(data.response);
+                
+                // Check status
+                if (data.status === 'error') {
+                    addMessage("⚠️ " + data.response);
+                } else {
+                    addMessage(data.response);
+                }
                 
                 chatInput.disabled = false;
                 chatSubmitBtn.disabled = true; 
@@ -213,19 +223,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // FORCE HARD FIX (GUARANTEED) to overcome aggressive browser HTML caching
-    const dropdown = document.getElementById("state");
-    if (dropdown) {
-        dropdown.innerHTML = `
-            <option value="" disabled selected>Select your state</option>
-            <option value="Andhra Pradesh">Andhra Pradesh</option>
-            <option value="Telangana">Telangana</option>
-            <option value="Tamil Nadu">Tamil Nadu</option>
-            <option value="Karnataka">Karnataka</option>
-            <option value="Maharashtra">Maharashtra</option>
-            <option value="Delhi</option>
-            <option value="Odisha">Odisha</option>
-            <option value="West Bengal">West Bengal</option>
-        `;
-    }
 });
