@@ -22,6 +22,7 @@ def add_security_headers(response):
     response.headers['X-Request-ID'] = str(uuid.uuid4())
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
     return response
 
 # Security: In-memory cache & Rate limiting state
@@ -302,7 +303,10 @@ def chat():
             return jsonify({"response": "Invalid request format.", "status": "error"}), 400
             
         user_message = str(data.get("message", "")).strip()
-        language = str(data.get("language", "en")).strip()
+        language = str(data.get("language", "en")).strip().lower()
+        # Whitelist valid languages — reject unexpected values to prevent prompt injection
+        if language not in ("en", "hi", "te"):
+            language = "en"
         
         if not user_message:
             return jsonify({"response": "Message cannot be empty.", "status": "error"}), 400

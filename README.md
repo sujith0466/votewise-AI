@@ -34,8 +34,8 @@ The system follows a streamlined modular flow:
 
 - **Frontend:** Vanilla HTML5/JS + Tailwind CSS (Accessible & Responsive).
 - **Backend:** Python / Flask (Clean, modular logic).
-- **AI Services:** 
-  - **Gemini API:** Powers advanced reasoning and real-time translation.
+- **AI Services:**
+  - **Gemini 2.5 Flash (`gemini-2.5-flash`):** Used as the fallback AI engine for complex, open-ended queries not handled by the rule engine. Also powers real-time multi-language translation (Hindi, Telugu).
   - **Firebase Firestore:** Structured interaction logging with the following fields:
 
 ### Firestore Logging Fields

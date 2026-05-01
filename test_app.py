@@ -147,6 +147,25 @@ def test_gemini_fallback_on_offline(monkeypatch):
     assert len(result) > 0  # Non-empty fallback message returned
     assert "how to vote" in result.lower() or "try asking" in result.lower() or "documents" in result.lower()
 
+def test_security_headers_present():
+    """All required security headers must be present on every API response."""
+    client = get_client()
+    r = client.post("/api/chat", json={"message": "how to vote", "language": "en"})
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+    assert r.headers.get("X-Frame-Options") == "DENY"
+    assert "Content-Security-Policy" in r.headers
+    assert "X-Request-ID" in r.headers
+
+def test_invalid_language_falls_back_to_english():
+    """Unsupported language codes must be silently normalised to 'en'."""
+    client = get_client()
+    r = client.post("/api/chat", json={"message": "how to vote", "language": "fr"})
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["status"] == "success"
+    assert len(data["response"]) > 0
+
+
 
 # ─── Run directly ───
 
