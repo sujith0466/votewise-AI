@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgDiv = document.createElement('div');
         msgDiv.className = `flex items-start gap-3 fade-in typing-indicator-container`;
         msgDiv.id = 'typing-indicator';
+        msgDiv.setAttribute('role', 'status');
         
         const avatar = document.createElement('div');
         avatar.className = `flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs bg-gray-800`;

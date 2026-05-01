@@ -3,6 +3,8 @@ import json
 import datetime
 import re
 import time
+import hashlib
+import uuid
 from flask import Flask, render_template, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -14,6 +16,14 @@ load_dotenv()
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def add_security_headers(response):
+    """Attach traceability and security headers to every response."""
+    response.headers['X-Request-ID'] = str(uuid.uuid4())
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
 
 # Security: In-memory cache & Rate limiting state
 response_cache = {}
@@ -178,8 +188,8 @@ def get_gemini_response(user_input):
             "• Where to vote"
         )
     
-    # Check cache first
-    cache_key = f"gen_{user_input.lower().strip()}"
+    # Check cache first using safe MD5 hash
+    cache_key = f"gen_{hashlib.md5(user_input.lower().strip().encode()).hexdigest()[:16]}"
     if cache_key in response_cache:
         cached_data = response_cache[cache_key]
         if time.time() - cached_data['time'] < CACHE_EXPIRY:
@@ -223,8 +233,8 @@ def translate_response(text, target_language):
     if target_lang_name == "English":
         return text
         
-    # Check cache
-    cache_key = f"trans_{target_language}_{text[:50]}"
+    # Check cache using safe MD5 hash to prevent long key or collision issues
+    cache_key = f"trans_{target_language}_{hashlib.md5(text.encode()).hexdigest()[:16]}"
     if cache_key in response_cache:
         cached_data = response_cache[cache_key]
         if time.time() - cached_data['time'] < CACHE_EXPIRY:
@@ -270,7 +280,12 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    # 0. Ensure services are ready
+    """
+    Main API endpoint for the chatbot.
+    Handles rate limiting, validation, hybrid routing, translation, and Firestore logging.
+    """
+    # 0. Ensure services are ready; start latency clock for observability
+    request_start = time.time()
     init_services()
 
     # 1. Rate Limiting
@@ -299,11 +314,12 @@ def chat():
     except Exception as e:
         return jsonify({"response": "An unexpected error occurred processing your input.", "status": "error"}), 400
         
-    # 3. Smart Hybrid Routing
+    # 3. Smart Hybrid Routing: rule-based runs first to minimise API cost and latency
     source = "rule-based"
     try:
         bot_response = get_rule_based_response(user_message)
-        
+
+        # Fall through to Gemini only when no rule matches
         if not bot_response:
             source = "gemini"
             bot_response = get_gemini_response(user_message)
@@ -316,11 +332,13 @@ def chat():
     except Exception as e:
         print(f"Routing error: {e}")
         return jsonify({
-            "response": "An internal system error occurred. Please try again.",
+            "response": "I'm currently experiencing high load. Please try again shortly. "
+                        "You can also ask about voting eligibility or required documents.",
             "status": "error"
         }), 500
         
-    # 5. Firebase Logging
+    # 5. Firebase Logging — enriched with latency and response_type for observability
+    latency_ms = round((time.time() - request_start) * 1000, 2)
     if firebase_initialized is True and db:
         try:
             doc_ref = db.collection("chat_queries").document()
@@ -329,6 +347,8 @@ def chat():
                 "bot_response": final_response,
                 "language": language,
                 "source": source,
+                "response_type": source,      # explicit type label for analytics
+                "latency_ms": latency_ms,     # end-to-end request latency
                 "timestamp": firestore.SERVER_TIMESTAMP
             })
         except Exception as e:

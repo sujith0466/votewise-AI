@@ -90,6 +90,64 @@ def test_response_json_structure():
     assert "status" in data
 
 
+# ─── Routing Priority Test ───
+
+def test_rule_based_takes_priority_over_gemini():
+    """Rule-based engine must respond to known keywords without invoking Gemini."""
+    # These queries all have rule matches — response must be instant and deterministic
+    rule_triggers = ["how to vote", "register", "evm", "nota", "first time voter"]
+    for query in rule_triggers:
+        result = get_rule_based_response(query)
+        assert result is not None, f"Expected rule-based match for: '{query}', got None"
+
+
+# ─── Additional Edge Case Tests ───
+
+def test_rule_register():
+    """'register' keyword must match the voter registration rule."""
+    result = get_rule_based_response("How do I register to vote?")
+    assert result is not None
+    assert "form" in result.lower() or "register" in result.lower()
+
+def test_rule_polling_booth():
+    """'polling booth' keyword must match the polling location rule."""
+    result = get_rule_based_response("Where is my polling booth?")
+    assert result is not None
+    assert "election commission" in result.lower() or "polling" in result.lower()
+
+def test_rule_age_eligible():
+    """Age >= 18 must return an eligibility confirmation."""
+    result = get_rule_based_response("I am 22 years old from Delhi")
+    assert result is not None
+    assert "eligible" in result.lower()
+
+def test_rule_age_ineligible():
+    """Age < 18 must return a 'must wait' response."""
+    result = get_rule_based_response("I am 16 years old")
+    assert result is not None
+    assert "18" in result
+
+
+# ─── Mock & Header Tests ───
+
+def test_x_request_id_header_present():
+    """Every API response must include a unique X-Request-ID header."""
+    client = get_client()
+    r = client.post("/api/chat", json={"message": "how to vote", "language": "en"})
+    assert "X-Request-ID" in r.headers
+    assert len(r.headers["X-Request-ID"]) == 36  # UUID4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+def test_gemini_fallback_on_offline(monkeypatch):
+    """When Gemini is offline, get_gemini_response must return a safe fallback string."""
+    import app as app_module
+    # Force the initialized flag to False so the offline guard triggers
+    monkeypatch.setattr(app_module, "gemini_initialized", False)
+    result = app_module.get_gemini_response("explain democracy")
+    assert result is not None
+    assert len(result) > 0  # Non-empty fallback message returned
+    assert "how to vote" in result.lower() or "try asking" in result.lower() or "documents" in result.lower()
+
+
 # ─── Run directly ───
 
 if __name__ == "__main__":

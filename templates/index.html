@@ -26,6 +26,9 @@
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-200 selection:text-blue-900">
 
+    <!-- Skip navigation link for keyboard/screen-reader users -->
+    <a href="#chat" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md focus:text-sm focus:font-medium">Skip to chatbot</a>
+
     <!-- Navigation -->
     <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -229,7 +232,7 @@
         </section>
 
         <!-- Chatbot Section -->
-        <section id="chat" class="py-16 bg-blue-50">
+        <section id="chat" class="py-16 bg-blue-50" aria-label="VoteWise AI chatbot assistant">
             <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-10">
                     <h2 class="text-3xl font-bold text-gray-900">Have Questions? Ask VoteWise AI</h2>
@@ -266,7 +269,7 @@
                     <!-- Chat Input -->
                     <form id="chat-form" class="p-4 bg-white flex gap-2">
                         <label for="chat-input" class="sr-only">Type your message</label>
-                        <input type="text" id="chat-input" autocomplete="off" class="flex-1 rounded-full border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 border" placeholder="Type your message here..." required aria-required="true">
+                        <input type="text" id="chat-input" autocomplete="off" class="flex-1 rounded-full border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 border" placeholder="Type your message here..." aria-label="Type your message" required aria-required="true">
                         <button type="submit" id="chat-submit" class="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-full shadow-md text-sm font-medium text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Send message">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
