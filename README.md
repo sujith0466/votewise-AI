@@ -95,6 +95,19 @@ Flask API (/api/chat)
 | **Lazy service init** | Firebase/Gemini initialize on first request — Gunicorn-safe |
 | **Neutral AI prompt** | Prevents political bias; aligns with Google AI Principles |
 | **Graceful degradation** | App serves rule-based responses even if Gemini/Firebase fail |
+| **HTTP Security Headers** | Every response includes `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-Request-ID` |
+
+---
+
+## 🔒 Security Headers
+
+Every HTTP response from the API includes:
+
+| Header | Value | Purpose |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing attacks |
+| `X-Frame-Options` | `DENY` | Blocks clickjacking via iframe embedding |
+| `X-Request-ID` | UUID v4 | Unique per-request ID for log traceability |
 
 ---
 
