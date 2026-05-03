@@ -16,6 +16,16 @@
 
 ---
 
+## 🔑 Google Services Integration
+
+| Service | How It's Used | Where in Code |
+|---|---|---|
+| **Gemini 2.5 Flash** | Fallback AI engine for complex queries + real-time translation | `get_gemini_response()`, `translate_response()` in `app.py` |
+| **Firebase Firestore** | Structured logging of every interaction with 7 analytics fields | `db.collection("chat_queries").document()` in `app.py` |
+| **Google Fonts (Inter)** | UI typography | `<head>` in `index.html` |
+
+> Both Gemini and Firestore are **fault-tolerant** — the app degrades gracefully if either service is unavailable.
+
 ## ⚙️ Production Features
 | Feature | Detail |
 |---|---|
@@ -95,7 +105,7 @@ Flask API (/api/chat)
 | **Lazy service init** | Firebase/Gemini initialize on first request — Gunicorn-safe |
 | **Neutral AI prompt** | Prevents political bias; aligns with Google AI Principles |
 | **Graceful degradation** | App serves rule-based responses even if Gemini/Firebase fail |
-| **HTTP Security Headers** | Every response includes `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-Request-ID` |
+| **HTTP Security Headers** | 4-header security stack: `nosniff`, `DENY`, CSP allowlist, `X-Request-ID` |
 
 ---
 
@@ -107,6 +117,7 @@ Every HTTP response from the API includes:
 |---|---|---|
 | `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing attacks |
 | `X-Frame-Options` | `DENY` | Blocks clickjacking via iframe embedding |
+| `Content-Security-Policy` | Scoped allowlist | Restricts script/style/font sources to trusted CDNs only |
 | `X-Request-ID` | UUID v4 | Unique per-request ID for log traceability |
 
 ---
@@ -152,14 +163,27 @@ PORT=5000
 ---
 
 ## 🧪 Testing
-Includes lightweight unit tests (`test_app.py`) covering:
-- Rule-based response accuracy (EVM, NOTA, how to vote)
-- Input validation (empty, oversized, malformed requests)
-- API contract verification (JSON structure, status codes)
 
-Run tests:
+**20 automated tests** covering all major paths — run via `pytest` with zero external service dependencies.
+
+| Test Category | Count | What's Covered |
+|---|---|---|
+| Rule-based accuracy | 8 | EVM, NOTA, register, polling booth, age eligible/ineligible, first-time voter |
+| Input validation | 3 | Empty input, oversized input (>500 chars), malformed JSON |
+| API contract | 3 | JSON structure, status codes, homepage load |
+| Routing priority | 1 | Proves rule engine fires before Gemini |
+| Security headers | 1 | Verifies all 4 headers on every response |
+| Mock/fallback | 1 | Gemini offline fallback via monkeypatch |
+| Language whitelist | 1 | Invalid language code falls back to English |
+| Header traceability | 1 | `X-Request-ID` UUID format validated |
+| Edge cases | 1 | Missing body / non-JSON payload |
+
+**CI/CD:** Tests auto-run on every push via GitHub Actions (`.github/workflows/pytest.yml`).
+
 ```bash
-python test_app.py
+# Run locally
+pip install -r requirements.txt
+pytest -v
 ```
 
 ---
